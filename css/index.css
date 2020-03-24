@@ -1,0 +1,19 @@
+body, html {
+  background-color: black;
+}
+
+body {
+  justify-content: center;
+  align-items: center;
+}
+
+.simulation-container {
+  justify-content: center;
+  align-items: center;
+}
+
+.block, .infected, .dead, .recovered {
+  width: 1rem;
+  height: 1rem;
+  margin: 1rem;
+}
