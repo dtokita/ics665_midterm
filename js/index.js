@@ -1,9 +1,8 @@
 // Simulation Parameters
 var gridSize = 20;
 var transmissionRate = 0.5;
-var deathRate = 0.25;
-var recoveryRate = 0.5;
-var incubationPeriod = 14;
+var deathRate = 0.1;
+var incubationPeriod = 5;
 
 var grid = [gridSize, gridSize];
 var columns = grid[0];
@@ -37,6 +36,16 @@ for (let i = 0; i < rows; i++) {
 
 simulationVisualization.appendChild(fragment);
 
+let screenHeight = document.querySelector('.simulation-container').clientHeight;
+let screenWidth = document.querySelector('.simulation-container').clientWidth;
+var blockSize = 0;
+
+if (screenWidth > screenHeight) {
+    blockSize = screenHeight / gridSize;
+} else {
+    blockSize = screenWidth / gridSize;
+}
+
 var animation = anime.timeline({
     targets: '.block',
     easing: 'easeInOutSine',
@@ -45,7 +54,10 @@ var animation = anime.timeline({
 })
     .add({
         backgroundColor: '#FFFFFF',
-        border: '#FFFFFF'
+        border: '#FFFFFF',
+        width: blockSize,
+        height: blockSize,
+        margin: blockSize
     });
 
 var initialInfectedBlockId = Math.floor(Math.random() * columns * rows);
@@ -64,15 +76,21 @@ animation.add({
 
 function simulateStep() {
   infected.forEach(deathCheck);
+  infected.forEach(recoveryCheck);
   infected.forEach(infectionCheck);
 
   console.log(infected);
   console.log(dead);
+  console.log(recovered);
 }
 
 function infectionCheck(infectedObj, index) {
 
-  if (infectedObj['age'] == -1) {
+  if ((infectedObj['age'] == -1) || (infectedObj['age'] == incubationPeriod - 1)) {
+    infected = infected.filter(function(value, index, infected) {
+        return ((value['age'] != -1) && (value['age'] < incubationPeriod));
+    });
+
     return 0;
   }
 
@@ -182,7 +200,7 @@ function infectionCheck(infectedObj, index) {
 
 function deathCheck(infectedObj, index) {
 
-  if (Math.random() <= deathRate) {
+  if ((Math.random() <= deathRate) && (document.getElementById(infectedObj['id']).className == 'infected')) {
 
     infectedObj['age'] = -1;
 
@@ -205,5 +223,24 @@ function deathCheck(infectedObj, index) {
     }
 
   }
+
+}
+
+function recoveryCheck(infectedObj, index) {
+
+    if (infectedObj['age'] == incubationPeriod) {
+        var recoveredBlock = document.getElementById(infectedObj['id']);
+        recoveredBlock.className = 'recovered';
+
+        recovered.push(infectedObj);
+
+        anime({
+            targets: '.recovered',
+            backgroundColor: '#00ff00',
+            border: '#00ff00',
+            easing: 'easeInOutSine',
+            delay: anime.stagger(5)
+        });
+    }
 
 }
