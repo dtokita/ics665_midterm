@@ -1,246 +1,277 @@
-// Simulation Parameters
-var gridSize = 20;
-var transmissionRate = 0.5;
-var deathRate = 0.1;
-var incubationPeriod = 5;
+$(document).ready(function() {
 
-var grid = [gridSize, gridSize];
-var columns = grid[0];
-var rows = grid[1];
-var count = 0;
+    $('#number-of-blocks').change(function() {
+        var label = document.getElementById('number-of-blocks-label');
+        let sliderVal = document.getElementById('number-of-blocks').value;
 
-var infected = [];
-var recovered = [];
-var dead = [];
-
-var simulationVisualization = document.querySelector('.simulation-container');
-var fragment = document.createDocumentFragment();
-
-for (let i = 0; i < rows; i++) {
-
-  var row = document.createElement('div');
-  row.className = 'row';
-
-  for (let j = 0; j < columns; j++) {
-    var block = document.createElement('div');
-    block.className = 'block';
-    block.id = count;
-
-    row.appendChild(block);
-    count++;
-  }
-
-  fragment.appendChild(row);
-
-}
-
-simulationVisualization.appendChild(fragment);
-
-let screenHeight = document.querySelector('.simulation-container').clientHeight;
-let screenWidth = document.querySelector('.simulation-container').clientWidth;
-var blockSize = 0;
-
-if (screenWidth > screenHeight) {
-    blockSize = screenHeight / gridSize;
-} else {
-    blockSize = screenWidth / gridSize;
-}
-
-var animation = anime.timeline({
-    targets: '.block',
-    easing: 'easeInOutSine',
-    delay: anime.stagger(5),
-    autoplay: true
-})
-    .add({
-        backgroundColor: '#FFFFFF',
-        border: '#FFFFFF',
-        width: blockSize,
-        height: blockSize,
-        margin: blockSize
+        label.innerText = 'Number of Blocks (' + sliderVal + ')';
     });
 
-var initialInfectedBlockId = Math.floor(Math.random() * columns * rows);
-infected.push({id: initialInfectedBlockId, age: 0});
+    $('#transmission-rate').change(function() {
+        var label = document.getElementById('transmission-rate-label');
+        let sliderVal = document.getElementById('transmission-rate').value / 100.0;
 
-var initialInfectedBlock = document.getElementById(initialInfectedBlockId);
-initialInfectedBlock.className = 'infected';
-
-animation.add({
-  backgroundColor: '#AA0000',
-  border: '#AA0000',
-  targets: '.infected',
-  easing: 'easeInOutSine',
-  delay: anime.stagger(5)
-});
-
-function simulateStep() {
-  infected.forEach(deathCheck);
-  infected.forEach(recoveryCheck);
-  infected.forEach(infectionCheck);
-
-  console.log(infected);
-  console.log(dead);
-  console.log(recovered);
-}
-
-function infectionCheck(infectedObj, index) {
-
-  if ((infectedObj['age'] == -1) || (infectedObj['age'] == incubationPeriod - 1)) {
-    infected = infected.filter(function(value, index, infected) {
-        return ((value['age'] != -1) && (value['age'] < incubationPeriod));
+        label.innerText = 'Transmission Rate (' + sliderVal + ')';
     });
 
-    return 0;
-  }
+    $('#death-rate').change(function() {
+        var label = document.getElementById('death-rate-label');
+        let sliderVal = document.getElementById('death-rate').value / 100.0;
 
-  let id = infectedObj['id'];
-  var left = null;
-  var right = null;
-  var up = null;
-  var down = null;
+        label.innerText = 'Death Rate (' + sliderVal + ')';
+    });
 
-  if ((id % gridSize) != 0) {
-    left = id - 1;
+    $('#recovery-rate').change(function() {
+        var label = document.getElementById('recovery-rate-label');
+        let sliderVal = document.getElementById('recovery-rate').value / 100.0;
 
-    if (Math.random() <= transmissionRate) {
+        label.innerText = 'Recovery Rate (' + sliderVal + ')';
+    });
 
-      var block = document.getElementById(left);
+    $('#infection-radius').change(function() {
+        var label = document.getElementById('infection-radius-label');
+        let sliderVal = document.getElementById('infection-radius').value;
 
-      if (block.className == 'block') {
-          infected.push({id: left, age: 0});
-          document.getElementById(left).className = 'infected';
-
-          anime({
-              targets: '.infected',
-              backgroundColor: '#AA0000',
-              border: '#AA0000',
-              easing: 'easeInOutSine',
-              delay: anime.stagger(5)
-          });
-
-      }
-    }
-  }
-
-  if ((id % gridSize) != (gridSize - 1)) {
-    right = id + 1;
-
-      if (Math.random() <= transmissionRate) {
-
-          var block = document.getElementById(right);
-
-          if (block.className == 'block') {
-              infected.push({id: right, age: 0});
-              document.getElementById(right).className = 'infected';
-
-              anime({
-                  targets: '.infected',
-                  backgroundColor: '#AA0000',
-                  border: '#AA0000',
-                  easing: 'easeInOutSine',
-                  delay: anime.stagger(5)
-              });
-
-          }
-      }
-
-  }
-
-  if ((id - gridSize) > -1) {
-    up = id - gridSize;
-
-      if (Math.random() <= transmissionRate) {
-
-          var block = document.getElementById(up);
-
-          if (block.className == 'block') {
-              infected.push({id: up, age: 0});
-              document.getElementById(up).className = 'infected';
-
-              anime({
-                  targets: '.infected',
-                  backgroundColor: '#AA0000',
-                  border: '#AA0000',
-                  easing: 'easeInOutSine',
-                  delay: anime.stagger(5)
-              });
-
-          }
-      }
-
-  }
-
-  if ((id + gridSize) < count + 1) {
-    down = id + gridSize;
-
-      if (Math.random() <= transmissionRate) {
-
-          var block = document.getElementById(down);
-
-          if (block.className == 'block') {
-              infected.push({id: down, age: 0});
-              document.getElementById(down).className = 'infected';
-
-              anime({
-                  targets: '.infected',
-                  backgroundColor: '#AA0000',
-                  border: '#AA0000',
-                  easing: 'easeInOutSine',
-                  delay: anime.stagger(5)
-              });
-
-          }
-      }
-
-  }
-
-
-}
-
-function deathCheck(infectedObj, index) {
-
-  if ((Math.random() <= deathRate) && (document.getElementById(infectedObj['id']).className == 'infected')) {
-
-    infectedObj['age'] = -1;
-
-    var deadBlock = document.getElementById(infectedObj['id']);
-    deadBlock.className = 'dead';
-
-    dead.push(infectedObj);
+        label.innerText = 'Recovery Rate (' + sliderVal + 'px)';
+    });
 
     anime({
-        targets: '.dead',
-        backgroundColor: '#3d3d3d',
-        border: '#3d3d3d',
-        easing: 'easeInOutSine',
-        delay: anime.stagger(5)
+        targets: document.getElementById('simulation-container'),
+        translateY: '3vh',
+        borderWidth: 2,
+        borderColor: '#929292',
+        height: '50vh',
+        easing: 'linear',
+        autoplay: true
     });
 
-  } else {
-    if (infectedObj['age'] != -1) {
-        infectedObj['age']++;
-    }
+    anime({
+        targets: document.getElementById('graph-container'),
+        translateY: '6vh',
+        borderWidth: 2,
+        borderColor: '#929292',
+        height: '30vh',
+        easing: 'linear',
+        autoplay: true
+    });
 
-  }
+});
+
+function initSimulation() {
+
+    generateBlocks();
+    randomlyMoveBlocks();
+
+    Plotly.plot('graph-container', [{
+        y: [0], // infected
+        type: 'line',
+        name: 'Infected',
+        line: {
+            color: 'red'
+        }
+    }, {
+        y: [document.getElementsByClassName('vulnerable').length], // vulnerable
+        type: 'line',
+        name: 'Vulnerable',
+        line: {
+            color: 'black'
+        }
+    }, {
+        y: [document.getElementsByClassName('dead').length], // dead
+        type: 'line',
+        name: 'Dead',
+        line: {
+            color: 'purple'
+        }
+    }, {
+        y: [document.getElementsByClassName('recovered').length], // recovered
+        type: 'line',
+        name: 'Recovered',
+        line: {
+            color: 'green'
+        }
+    }], {
+        height: document.getElementById('graph-container').clientHeight,
+        width: document.getElementById('graph-container').clientWidth - 20,
+        margin: {
+            t: 20,
+            l: 20,
+            r: 20,
+            b: 20
+        }
+    });
+}
+
+function simulationStep() {
+
+    infectionCheck();
+    deathCheck();
+    recoveryCheck();
+    randomlyMoveBlocks();
+
+    Plotly.extendTraces('graph-container', {
+       y: [[document.getElementsByClassName('infected').length],
+           [document.getElementsByClassName('vulnerable').length],
+           [document.getElementsByClassName('dead').length],
+           [document.getElementsByClassName('recovered').length]]
+    }, [0, 1, 2, 3]);
 
 }
 
-function recoveryCheck(infectedObj, index) {
+function generateBlocks(timeline) {
+    let simulationContainer = document.getElementById('simulation-container');
 
-    if (infectedObj['age'] == incubationPeriod) {
-        var recoveredBlock = document.getElementById(infectedObj['id']);
-        recoveredBlock.className = 'recovered';
+    let patientZero = document.createElement('div');
+    patientZero.id = 0;
+    patientZero.className = 'infected';
 
-        recovered.push(infectedObj);
+    simulationContainer.appendChild(patientZero);
 
-        anime({
-            targets: '.recovered',
-            backgroundColor: '#00ff00',
-            border: '#00ff00',
-            easing: 'easeInOutSine',
-            delay: anime.stagger(5)
-        });
+    anime({
+        targets: '.infected',
+        backgroundColor: '#FF0000',
+        borderColor: '#FF0000'
+    });
+
+    for (var i = 1; i < document.getElementById('number-of-blocks').value; i++) {
+        var block = document.createElement('div');
+        block.id = i;
+        block.className = 'vulnerable';
+
+        simulationContainer.appendChild(block);
     }
+}
+
+function getSimulationRect() {
+    let simulationContainer = document.getElementById('simulation-container');
+    let simulationContainerRect = simulationContainer.getBoundingClientRect();
+
+    return simulationContainerRect;
+}
+
+function randomlyMoveBlocks() {
+    let simulationRect = getSimulationRect();
+
+    anime({
+        targets: '#simulation-container div',
+        left: function(el, i, l) {
+            return Math.floor(Math.random() * (simulationRect['width'] - 20));
+        },
+        top: function (el, i, l) {
+            return Math.floor(Math.random() * (simulationRect['height'] - 20));
+        },
+        easing: 'linear',
+        duration: 500,
+        delay: 1000
+    });
+}
+
+function infectionCheck() {
+    var infectedArr = document.getElementsByClassName('infected');
+    var scalingFactor = document.getElementById('infection-radius').value / 5;
+
+    anime({
+        targets: '.infected',
+        borderRadius: '50%',
+        backgroundColor: '#FFFFFF',
+        opacity: 0.5,
+        borderWidth: '0.5px',
+        duration: 400,
+        scale: scalingFactor,
+        easing: 'linear'
+    });
+
+    $.each(infectedArr, function(keyInfected, valueInfected) {
+
+        var vulnerableArr = document.getElementsByClassName('vulnerable');
+
+        $.each(vulnerableArr, function(keyVulnerable, valueVulnerable) {
+
+            if (valueVulnerable != undefined) {
+                if (isInRadius([valueInfected.offsetLeft, valueInfected.offsetTop],
+                    [valueVulnerable.offsetLeft, valueVulnerable.offsetTop],
+                    document.getElementById('infection-radius').value)) {
+
+                    if (Math.random() < (document.getElementById('transmission-rate').value / 100)) {
+                        valueVulnerable.className = 'infected';
+
+                        anime({
+                            targets: valueVulnerable,
+                            backgroundColor: '#FF0000',
+                            borderColor: '#FF0000',
+                            easing: 'linear',
+                            delay: 500,
+                            duration: 500
+                        });
+                    }
+                }
+
+            }
+        })
+    });
+
+}
+
+function deathCheck() {
+    var infectedArr = document.getElementsByClassName('infected');
+
+    $.each(infectedArr, function (key, value) {
+        if (Math.random() < (document.getElementById('death-rate').value / 100)) {
+
+            if (value != undefined) {
+                value.className = 'dead';
+
+                anime({
+                    targets: value,
+                    backgroundColor: '#a14aff',
+                    borderColor: '#a14aff',
+                    borderRadius: '0%',
+                    opacity: 1,
+                    scale: 1,
+                    easing: 'linear',
+                    duration: 500,
+                    delay: 1000
+                })
+            }
+
+        }
+    })
+}
+
+function recoveryCheck() {
+    var infectedArr = document.getElementsByClassName('infected');
+
+    $.each(infectedArr, function (key, value) {
+        if (Math.random() < (document.getElementById('recovery-rate').value / 100)) {
+
+            if (value != undefined) {
+                value.className = 'recovered';
+
+                anime({
+                    targets: value,
+                    backgroundColor: '#00ff00',
+                    borderColor: '#00ff00',
+                    borderRadius: '0%',
+                    opacity: 1,
+                    scale: 1,
+                    easing: 'linear',
+                    duration: 500,
+                    delay: 1000
+                })
+            }
+
+        }
+    })
+}
+
+function isInRadius(pointA, pointB, radius) {
+    let distance = (pointA[0] - pointB[0]) * (pointA[0] - pointB[0]) + (pointA[1] - pointB[1]) * (pointA[1] - pointB[1]);
+    radius *= radius;
+
+    if (distance < radius) {
+        return true;
+    }
+
+    return false;
 
 }

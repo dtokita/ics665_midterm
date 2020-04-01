@@ -13,29 +13,62 @@
 
 <body>
 
-<header>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">ICS665 Midterm</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNavDropdown">
-            <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Simulation
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        <a class="dropdown-item" href="#">Start</a>
-                        <a class="dropdown-item" href="#">Stop</a>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </nav>
-</header>
+<nav class="navbar navbar-expand-sm bg-light navbar-light">
+    <ul class="navbar-nav">
+        <li class="nav-item active">
+            <a class="nav-link" href="#">Disease Spreading Simulation</a>
+        </li>
 
-<div class="container-fluid simulation-container">
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">
+                Simulation Parameters
+            </a>
+            <div class="dropdown-menu">
+
+                <div class="dropdown-item">
+                    <label for="number-of-blocks" id="number-of-blocks-label">Number of Blocks (250)</label>
+                    <input type="range" class="form-control-range" id="number-of-blocks" min="0" max="500" value="250">
+                </div>
+
+                <div class="dropdown-item">
+                    <label for="transmission-rate" id="transmission-rate-label">Transmission Rate (0.50)</label>
+                    <input type="range" class="form-control-range" id="transmission-rate" min="0" max="100" value="40">
+                </div>
+
+                <div class="dropdown-item">
+                    <label for="death-rate" id="death-rate-label">Death Rate (0.15)</label>
+                    <input type="range" class="form-control-range" id="death-rate" min="0" max="100" value="15">
+                </div>
+
+                <div class="dropdown-item">
+                    <label for="recovery-rate" id="recovery-rate-label">Recovery Rate (0.15)</label>
+                    <input type="range" class="form-control-range" id="recovery-rate" min="0" max="100" value="15">
+                </div>
+
+                <div class="dropdown-item">
+                    <label for="infection-radius" id="infection-radius-label">Infection Radius (50px)</label>
+                    <input type="range" class="form-control-range" id="infection-radius" min="0" max="100" value="50">
+                </div>
+
+            </div>
+        </li>
+
+        <li class="nav-item active">
+            <a class="nav-link" onclick="initSimulation();">Initialize Simulation</a>
+        </li>
+
+        <li class="nav-item active">
+            <a class="nav-link" onclick="simulationStep();">Step Simulation</a>
+        </li>
+
+    </ul>
+</nav>
+
+<div class="container-fluid" id="simulation-container" style="border-color: white; border-style: solid">
+
+</div>
+
+<div class="container-fluid" id="graph-container" style="border-color: white; border-style: solid">
 
 </div>
 
@@ -43,9 +76,11 @@
 
 <!-- Vendor JS -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 <script src="js/anime.min.js"></script>
+
 
 <!-- User JS -->
 <script src="js/index.js"></script>
