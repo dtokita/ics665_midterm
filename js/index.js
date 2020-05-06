@@ -1,246 +1,312 @@
-// Simulation Parameters
-var gridSize = 20;
-var transmissionRate = 0.5;
-var deathRate = 0.1;
-var incubationPeriod = 5;
+// Entirely designed by dtokita unless otherwise noted
 
-var grid = [gridSize, gridSize];
-var columns = grid[0];
-var rows = grid[1];
-var count = 0;
+$(document).ready(function() {
 
-var infected = [];
-var recovered = [];
-var dead = [];
+    // Allow user to change the number of blocks using slider
+    $('#number-of-blocks').change(function() {
+        var label = document.getElementById('number-of-blocks-label');
+        let sliderVal = document.getElementById('number-of-blocks').value;
 
-var simulationVisualization = document.querySelector('.simulation-container');
-var fragment = document.createDocumentFragment();
-
-for (let i = 0; i < rows; i++) {
-
-  var row = document.createElement('div');
-  row.className = 'row';
-
-  for (let j = 0; j < columns; j++) {
-    var block = document.createElement('div');
-    block.className = 'block';
-    block.id = count;
-
-    row.appendChild(block);
-    count++;
-  }
-
-  fragment.appendChild(row);
-
-}
-
-simulationVisualization.appendChild(fragment);
-
-let screenHeight = document.querySelector('.simulation-container').clientHeight;
-let screenWidth = document.querySelector('.simulation-container').clientWidth;
-var blockSize = 0;
-
-if (screenWidth > screenHeight) {
-    blockSize = screenHeight / gridSize;
-} else {
-    blockSize = screenWidth / gridSize;
-}
-
-var animation = anime.timeline({
-    targets: '.block',
-    easing: 'easeInOutSine',
-    delay: anime.stagger(5),
-    autoplay: true
-})
-    .add({
-        backgroundColor: '#FFFFFF',
-        border: '#FFFFFF',
-        width: blockSize,
-        height: blockSize,
-        margin: blockSize
+        label.innerText = 'Number of Blocks (' + sliderVal + ')';
     });
 
-var initialInfectedBlockId = Math.floor(Math.random() * columns * rows);
-infected.push({id: initialInfectedBlockId, age: 0});
+    // Allow user to change transmission rate using slider
+    $('#transmission-rate').change(function() {
+        var label = document.getElementById('transmission-rate-label');
+        let sliderVal = document.getElementById('transmission-rate').value / 100.0;
 
-var initialInfectedBlock = document.getElementById(initialInfectedBlockId);
-initialInfectedBlock.className = 'infected';
+        label.innerText = 'Transmission Rate (' + sliderVal + ')';
+    });
 
-animation.add({
-  backgroundColor: '#AA0000',
-  border: '#AA0000',
-  targets: '.infected',
-  easing: 'easeInOutSine',
-  delay: anime.stagger(5)
+    // Allow user to change transmission rate using slider
+    $('#death-rate').change(function() {
+        var label = document.getElementById('death-rate-label');
+        let sliderVal = document.getElementById('death-rate').value / 100.0;
+
+        label.innerText = 'Death Rate (' + sliderVal + ')';
+    });
+
+    // Allow user to change recovery rate using slider
+    $('#recovery-rate').change(function() {
+        var label = document.getElementById('recovery-rate-label');
+        let sliderVal = document.getElementById('recovery-rate').value / 100.0;
+
+        label.innerText = 'Recovery Rate (' + sliderVal + ')';
+    });
+
+    // Allow user to change infection radius using slider
+    $('#infection-radius').change(function() {
+        var label = document.getElementById('infection-radius-label');
+        let sliderVal = document.getElementById('infection-radius').value;
+
+        label.innerText = 'Recovery Rate (' + sliderVal + 'px)';
+    });
+
+    // Animate the borders of the simulation container
+    anime({
+        targets: document.getElementById('simulation-container'),
+        translateY: '3vh',
+        borderWidth: 2,
+        borderColor: '#929292',
+        height: '50vh',
+        easing: 'linear',
+        autoplay: true
+    });
+
+    // Animate the borders of the graph container
+    anime({
+        targets: document.getElementById('graph-container'),
+        translateY: '6vh',
+        borderWidth: 2,
+        borderColor: '#929292',
+        height: '30vh',
+        easing: 'linear',
+        autoplay: true
+    });
+
 });
 
-function simulateStep() {
-  infected.forEach(deathCheck);
-  infected.forEach(recoveryCheck);
-  infected.forEach(infectionCheck);
+// Function to call to start the simulation
+function initSimulation() {
 
-  console.log(infected);
-  console.log(dead);
-  console.log(recovered);
+    // Generate and disperse blocks in simulation space
+    generateBlocks();
+    randomlyMoveBlocks();
+
+    // Initialize blank graph with traces at initial values
+    Plotly.plot('graph-container', [{
+        y: [0], // infected
+        type: 'line',
+        name: 'Infected',
+        line: {
+            color: 'red'
+        }
+    }, {
+        y: [document.getElementsByClassName('vulnerable').length], // vulnerable
+        type: 'line',
+        name: 'Vulnerable',
+        line: {
+            color: 'black'
+        }
+    }, {
+        y: [document.getElementsByClassName('dead').length], // dead
+        type: 'line',
+        name: 'Dead',
+        line: {
+            color: 'purple'
+        }
+    }, {
+        y: [document.getElementsByClassName('recovered').length], // recovered
+        type: 'line',
+        name: 'Recovered',
+        line: {
+            color: 'green'
+        }
+    }], {
+        height: document.getElementById('graph-container').clientHeight,
+        width: document.getElementById('graph-container').clientWidth - 20,
+        margin: {
+            t: 20,
+            l: 20,
+            r: 20,
+            b: 20
+        }
+    });
 }
 
-function infectionCheck(infectedObj, index) {
+// Execute a single step in the simulation
+function simulationStep() {
 
-  if ((infectedObj['age'] == -1) || (infectedObj['age'] == incubationPeriod - 1)) {
-    infected = infected.filter(function(value, index, infected) {
-        return ((value['age'] != -1) && (value['age'] < incubationPeriod));
+    // Make infection, death, and recovery determinations based on current positions and parameters
+    // determined in the control panel, then move blocks
+    infectionCheck();
+    deathCheck();
+    recoveryCheck();
+    randomlyMoveBlocks();
+
+    // Plot the values for the traces at the current time stamp
+    Plotly.extendTraces('graph-container', {
+       y: [[document.getElementsByClassName('infected').length],
+           [document.getElementsByClassName('vulnerable').length],
+           [document.getElementsByClassName('dead').length],
+           [document.getElementsByClassName('recovered').length]]
+    }, [0, 1, 2, 3]);
+
+}
+
+// Create blocks for the simulation
+function generateBlocks(timeline) {
+    let simulationContainer = document.getElementById('simulation-container');
+
+    // Create the initial infected patient
+    let patientZero = document.createElement('div');
+    patientZero.id = 0;
+    patientZero.className = 'infected';
+
+    simulationContainer.appendChild(patientZero);
+
+    // Change the infected block to red to indicate the infection
+    anime({
+        targets: '.infected',
+        backgroundColor: '#FF0000',
+        borderColor: '#FF0000'
     });
 
-    return 0;
-  }
+    // Create the rest of the blocks as black, vulnerable blocks
+    for (var i = 1; i < document.getElementById('number-of-blocks').value; i++) {
+        var block = document.createElement('div');
+        block.id = i;
+        block.className = 'vulnerable';
 
-  let id = infectedObj['id'];
-  var left = null;
-  var right = null;
-  var up = null;
-  var down = null;
-
-  if ((id % gridSize) != 0) {
-    left = id - 1;
-
-    if (Math.random() <= transmissionRate) {
-
-      var block = document.getElementById(left);
-
-      if (block.className == 'block') {
-          infected.push({id: left, age: 0});
-          document.getElementById(left).className = 'infected';
-
-          anime({
-              targets: '.infected',
-              backgroundColor: '#AA0000',
-              border: '#AA0000',
-              easing: 'easeInOutSine',
-              delay: anime.stagger(5)
-          });
-
-      }
+        simulationContainer.appendChild(block);
     }
-  }
-
-  if ((id % gridSize) != (gridSize - 1)) {
-    right = id + 1;
-
-      if (Math.random() <= transmissionRate) {
-
-          var block = document.getElementById(right);
-
-          if (block.className == 'block') {
-              infected.push({id: right, age: 0});
-              document.getElementById(right).className = 'infected';
-
-              anime({
-                  targets: '.infected',
-                  backgroundColor: '#AA0000',
-                  border: '#AA0000',
-                  easing: 'easeInOutSine',
-                  delay: anime.stagger(5)
-              });
-
-          }
-      }
-
-  }
-
-  if ((id - gridSize) > -1) {
-    up = id - gridSize;
-
-      if (Math.random() <= transmissionRate) {
-
-          var block = document.getElementById(up);
-
-          if (block.className == 'block') {
-              infected.push({id: up, age: 0});
-              document.getElementById(up).className = 'infected';
-
-              anime({
-                  targets: '.infected',
-                  backgroundColor: '#AA0000',
-                  border: '#AA0000',
-                  easing: 'easeInOutSine',
-                  delay: anime.stagger(5)
-              });
-
-          }
-      }
-
-  }
-
-  if ((id + gridSize) < count + 1) {
-    down = id + gridSize;
-
-      if (Math.random() <= transmissionRate) {
-
-          var block = document.getElementById(down);
-
-          if (block.className == 'block') {
-              infected.push({id: down, age: 0});
-              document.getElementById(down).className = 'infected';
-
-              anime({
-                  targets: '.infected',
-                  backgroundColor: '#AA0000',
-                  border: '#AA0000',
-                  easing: 'easeInOutSine',
-                  delay: anime.stagger(5)
-              });
-
-          }
-      }
-
-  }
-
-
 }
 
-function deathCheck(infectedObj, index) {
+// Get dimension of simulation space
+function getSimulationRect() {
+    let simulationContainer = document.getElementById('simulation-container');
+    let simulationContainerRect = simulationContainer.getBoundingClientRect();
 
-  if ((Math.random() <= deathRate) && (document.getElementById(infectedObj['id']).className == 'infected')) {
+    return simulationContainerRect;
+}
 
-    infectedObj['age'] = -1;
-
-    var deadBlock = document.getElementById(infectedObj['id']);
-    deadBlock.className = 'dead';
-
-    dead.push(infectedObj);
+// Randomly shuffle the blocks bounded by the simulation space
+function randomlyMoveBlocks() {
+    let simulationRect = getSimulationRect();
 
     anime({
-        targets: '.dead',
-        backgroundColor: '#3d3d3d',
-        border: '#3d3d3d',
-        easing: 'easeInOutSine',
-        delay: anime.stagger(5)
+        targets: '#simulation-container div',
+        left: function(el, i, l) {
+            return Math.floor(Math.random() * (simulationRect['width'] - 20));
+        },
+        top: function (el, i, l) {
+            return Math.floor(Math.random() * (simulationRect['height'] - 20));
+        },
+        easing: 'linear',
+        duration: 500,
+        delay: 1000
+    });
+}
+
+// Using the infection rate and infection radius, randomly determine if an infected
+// block infects those around it 
+function infectionCheck() {
+    var infectedArr = document.getElementsByClassName('infected');
+    var scalingFactor = document.getElementById('infection-radius').value / 5;
+
+    // Change the infected to red circles to indicate the radius of infection
+    anime({
+        targets: '.infected',
+        borderRadius: '50%',
+        backgroundColor: '#FFFFFF',
+        opacity: 0.5,
+        borderWidth: '0.5px',
+        duration: 400,
+        scale: scalingFactor,
+        easing: 'linear'
     });
 
-  } else {
-    if (infectedObj['age'] != -1) {
-        infectedObj['age']++;
-    }
+    // Perform the random calculation for each infected block in simulation
+    $.each(infectedArr, function(keyInfected, valueInfected) {
 
-  }
+        var vulnerableArr = document.getElementsByClassName('vulnerable');
+
+        // Check if each vulnerable is in radius of infected
+        $.each(vulnerableArr, function(keyVulnerable, valueVulnerable) {
+
+            if (valueVulnerable != undefined) {
+                if (isInRadius([valueInfected.offsetLeft, valueInfected.offsetTop],
+                    [valueVulnerable.offsetLeft, valueVulnerable.offsetTop],
+                    document.getElementById('infection-radius').value)) {
+
+                    if (Math.random() < (document.getElementById('transmission-rate').value / 100)) {
+                        // Block infected, change class and animate the transition to red
+                        valueVulnerable.className = 'infected';
+                        
+                        anime({
+                            targets: valueVulnerable,
+                            backgroundColor: '#FF0000',
+                            borderColor: '#FF0000',
+                            easing: 'linear',
+                            delay: 500,
+                            duration: 500
+                        });
+                    }
+                }
+
+            }
+        })
+    });
 
 }
 
-function recoveryCheck(infectedObj, index) {
+// Check if an infected block dies, randomly based on death-rate
+function deathCheck() {
+    var infectedArr = document.getElementsByClassName('infected');
 
-    if (infectedObj['age'] == incubationPeriod) {
-        var recoveredBlock = document.getElementById(infectedObj['id']);
-        recoveredBlock.className = 'recovered';
+    // Check if each infected with die
+    $.each(infectedArr, function (key, value) {
+        if (Math.random() < (document.getElementById('death-rate').value / 100)) {
 
-        recovered.push(infectedObj);
+            if (value != undefined) {
+                // Infected block dies, animate the transition to purple block
+                value.className = 'dead';
 
-        anime({
-            targets: '.recovered',
-            backgroundColor: '#00ff00',
-            border: '#00ff00',
-            easing: 'easeInOutSine',
-            delay: anime.stagger(5)
-        });
+                anime({
+                    targets: value,
+                    backgroundColor: '#a14aff',
+                    borderColor: '#a14aff',
+                    borderRadius: '0%',
+                    opacity: 1,
+                    scale: 1,
+                    easing: 'linear',
+                    duration: 500,
+                    delay: 1000
+                })
+            }
+
+        }
+    })
+}
+
+// Check if an infected block recovers, randomly based on recovery-rate
+function recoveryCheck() {
+    var infectedArr = document.getElementsByClassName('infected');
+
+    // Check if each infected block recovers
+    $.each(infectedArr, function (key, value) {
+        if (Math.random() < (document.getElementById('recovery-rate').value / 100)) {
+
+            if (value != undefined) {
+                // Infected block recovers and animate block to green
+                value.className = 'recovered';
+
+                anime({
+                    targets: value,
+                    backgroundColor: '#00ff00',
+                    borderColor: '#00ff00',
+                    borderRadius: '0%',
+                    opacity: 1,
+                    scale: 1,
+                    easing: 'linear',
+                    duration: 500,
+                    delay: 1000
+                })
+            }
+
+        }
+    })
+}
+
+// Helper function to determine if two points are within a radius of each other
+function isInRadius(pointA, pointB, radius) {
+    let distance = (pointA[0] - pointB[0]) * (pointA[0] - pointB[0]) + (pointA[1] - pointB[1]) * (pointA[1] - pointB[1]);
+    radius *= radius;
+
+    if (distance < radius) {
+        return true;
     }
+
+    return false;
 
 }
