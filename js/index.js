@@ -1,5 +1,8 @@
+// Entirely designed by dtokita unless otherwise noted
+
 $(document).ready(function() {
 
+    // Allow user to change the number of blocks using slider
     $('#number-of-blocks').change(function() {
         var label = document.getElementById('number-of-blocks-label');
         let sliderVal = document.getElementById('number-of-blocks').value;
@@ -7,6 +10,7 @@ $(document).ready(function() {
         label.innerText = 'Number of Blocks (' + sliderVal + ')';
     });
 
+    // Allow user to change transmission rate using slider
     $('#transmission-rate').change(function() {
         var label = document.getElementById('transmission-rate-label');
         let sliderVal = document.getElementById('transmission-rate').value / 100.0;
@@ -14,6 +18,7 @@ $(document).ready(function() {
         label.innerText = 'Transmission Rate (' + sliderVal + ')';
     });
 
+    // Allow user to change transmission rate using slider
     $('#death-rate').change(function() {
         var label = document.getElementById('death-rate-label');
         let sliderVal = document.getElementById('death-rate').value / 100.0;
@@ -21,6 +26,7 @@ $(document).ready(function() {
         label.innerText = 'Death Rate (' + sliderVal + ')';
     });
 
+    // Allow user to change recovery rate using slider
     $('#recovery-rate').change(function() {
         var label = document.getElementById('recovery-rate-label');
         let sliderVal = document.getElementById('recovery-rate').value / 100.0;
@@ -28,6 +34,7 @@ $(document).ready(function() {
         label.innerText = 'Recovery Rate (' + sliderVal + ')';
     });
 
+    // Allow user to change infection radius using slider
     $('#infection-radius').change(function() {
         var label = document.getElementById('infection-radius-label');
         let sliderVal = document.getElementById('infection-radius').value;
@@ -35,6 +42,7 @@ $(document).ready(function() {
         label.innerText = 'Recovery Rate (' + sliderVal + 'px)';
     });
 
+    // Animate the borders of the simulation container
     anime({
         targets: document.getElementById('simulation-container'),
         translateY: '3vh',
@@ -45,6 +53,7 @@ $(document).ready(function() {
         autoplay: true
     });
 
+    // Animate the borders of the graph container
     anime({
         targets: document.getElementById('graph-container'),
         translateY: '6vh',
@@ -57,11 +66,14 @@ $(document).ready(function() {
 
 });
 
+// Function to call to start the simulation
 function initSimulation() {
 
+    // Generate and disperse blocks in simulation space
     generateBlocks();
     randomlyMoveBlocks();
 
+    // Initialize blank graph with traces at initial values
     Plotly.plot('graph-container', [{
         y: [0], // infected
         type: 'line',
@@ -102,13 +114,17 @@ function initSimulation() {
     });
 }
 
+// Execute a single step in the simulation
 function simulationStep() {
 
+    // Make infection, death, and recovery determinations based on current positions and parameters
+    // determined in the control panel, then move blocks
     infectionCheck();
     deathCheck();
     recoveryCheck();
     randomlyMoveBlocks();
 
+    // Plot the values for the traces at the current time stamp
     Plotly.extendTraces('graph-container', {
        y: [[document.getElementsByClassName('infected').length],
            [document.getElementsByClassName('vulnerable').length],
@@ -118,21 +134,25 @@ function simulationStep() {
 
 }
 
+// Create blocks for the simulation
 function generateBlocks(timeline) {
     let simulationContainer = document.getElementById('simulation-container');
 
+    // Create the initial infected patient
     let patientZero = document.createElement('div');
     patientZero.id = 0;
     patientZero.className = 'infected';
 
     simulationContainer.appendChild(patientZero);
 
+    // Change the infected block to red to indicate the infection
     anime({
         targets: '.infected',
         backgroundColor: '#FF0000',
         borderColor: '#FF0000'
     });
 
+    // Create the rest of the blocks as black, vulnerable blocks
     for (var i = 1; i < document.getElementById('number-of-blocks').value; i++) {
         var block = document.createElement('div');
         block.id = i;
@@ -142,6 +162,7 @@ function generateBlocks(timeline) {
     }
 }
 
+// Get dimension of simulation space
 function getSimulationRect() {
     let simulationContainer = document.getElementById('simulation-container');
     let simulationContainerRect = simulationContainer.getBoundingClientRect();
@@ -149,6 +170,7 @@ function getSimulationRect() {
     return simulationContainerRect;
 }
 
+// Randomly shuffle the blocks bounded by the simulation space
 function randomlyMoveBlocks() {
     let simulationRect = getSimulationRect();
 
@@ -166,10 +188,13 @@ function randomlyMoveBlocks() {
     });
 }
 
+// Using the infection rate and infection radius, randomly determine if an infected
+// block infects those around it 
 function infectionCheck() {
     var infectedArr = document.getElementsByClassName('infected');
     var scalingFactor = document.getElementById('infection-radius').value / 5;
 
+    // Change the infected to red circles to indicate the radius of infection
     anime({
         targets: '.infected',
         borderRadius: '50%',
@@ -181,10 +206,12 @@ function infectionCheck() {
         easing: 'linear'
     });
 
+    // Perform the random calculation for each infected block in simulation
     $.each(infectedArr, function(keyInfected, valueInfected) {
 
         var vulnerableArr = document.getElementsByClassName('vulnerable');
 
+        // Check if each vulnerable is in radius of infected
         $.each(vulnerableArr, function(keyVulnerable, valueVulnerable) {
 
             if (valueVulnerable != undefined) {
@@ -193,8 +220,9 @@ function infectionCheck() {
                     document.getElementById('infection-radius').value)) {
 
                     if (Math.random() < (document.getElementById('transmission-rate').value / 100)) {
+                        // Block infected, change class and animate the transition to red
                         valueVulnerable.className = 'infected';
-
+                        
                         anime({
                             targets: valueVulnerable,
                             backgroundColor: '#FF0000',
@@ -212,13 +240,16 @@ function infectionCheck() {
 
 }
 
+// Check if an infected block dies, randomly based on death-rate
 function deathCheck() {
     var infectedArr = document.getElementsByClassName('infected');
 
+    // Check if each infected with die
     $.each(infectedArr, function (key, value) {
         if (Math.random() < (document.getElementById('death-rate').value / 100)) {
 
             if (value != undefined) {
+                // Infected block dies, animate the transition to purple block
                 value.className = 'dead';
 
                 anime({
@@ -238,13 +269,16 @@ function deathCheck() {
     })
 }
 
+// Check if an infected block recovers, randomly based on recovery-rate
 function recoveryCheck() {
     var infectedArr = document.getElementsByClassName('infected');
 
+    // Check if each infected block recovers
     $.each(infectedArr, function (key, value) {
         if (Math.random() < (document.getElementById('recovery-rate').value / 100)) {
 
             if (value != undefined) {
+                // Infected block recovers and animate block to green
                 value.className = 'recovered';
 
                 anime({
@@ -264,6 +298,7 @@ function recoveryCheck() {
     })
 }
 
+// Helper function to determine if two points are within a radius of each other
 function isInRadius(pointA, pointB, radius) {
     let distance = (pointA[0] - pointB[0]) * (pointA[0] - pointB[0]) + (pointA[1] - pointB[1]) * (pointA[1] - pointB[1]);
     radius *= radius;
